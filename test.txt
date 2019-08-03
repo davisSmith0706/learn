@@ -1,0 +1,106 @@
+bool aick_mqtt_control_cb(char *key, aick_mqtt_msg *p_msg) {
+
+	cJSON *p_obj = NULL;
+	cJSON *p_data = NULL;
+	cJSON *p_workstatus = NULL;
+
+	p_data = p_msg->p_obj;
+
+	p_workstatus = cJSON_GetObjectItem(p_data, PROPERTY_SWITCH);
+	if (!p_workstatus) {
+		printf("WorkSwitch not found\n");
+		//return ;
+	}
+	else
+	{
+		printf("WorkSwitch:%d\n", p_workstatus->valueint);
+
+		stworkparam.WorkSwitch = p_workstatus->valueint;
+		if (p_workstatus->valueint == 0) 						//设置为关机
+		{
+			printf("control devices to 0\n");
+/*			blender_param.localRecipe=0;
+			blender_param.targetTemperature = 0;
+			blender_param.runTime = 0;
+*/
+//			device_control_upload(0, 0, 0, 0);
+		}
+		else if (p_workstatus->valueint == 1) 				   //设置为开机
+		{
+			cJSON *p_targettmp = NULL;
+			cJSON *p_appoint = NULL;
+			cJSON *p_localRecipe = NULL;
+			cJSON *p_holdingtmp = NULL;
+			cJSON *p_power = NULL;
+
+			p_localRecipe = cJSON_GetObjectItem(p_data, PROPERTY_MODE);
+			if (!p_localRecipe) 
+			{
+				printf("p_localRecipe not found\n");
+				//return ;
+/*				blender_param.localRecipe=0;
+				blender_param.targetTemperature = 0;
+				blender_param.runTime = 0;
+				device_control_upload(1, 0, 0, 0);*/
+				return;
+			}
+			stworkparam.localmenu = p_localRecipe->valueint;
+
+			p_appoint = cJSON_GetObjectItem(p_data, PROPERTY_APPOINT);
+
+			if(!p_appoint)				//预约时间为0，则为直接开始
+			{
+				printf("appoint  time is NULL,start work menu \r\n");
+				
+			}
+			else
+			{
+				stworkparam.aptime = p_appoint->valueint; //得到预约时间
+				
+			}
+
+
+			p_targettmp = cJSON_GetObjectItem(p_data, PROPERTY_TARGETMP);
+
+			if(!p_targettmp)				//目标温度
+			{
+				printf("target tmp  time is NULL \r\n");
+				
+			}
+			else
+			{
+				stworkparam.temperature = p_targettmp->valueint; //得到目标温度				
+			}
+			
+			p_holdingtmp = cJSON_GetObjectItem(p_data, PROPERTY_HOLDINGTMP);
+
+			if(!p_holdingtmp)				//目标温度
+			{
+				printf("target tmp  time is NULL \r\n");
+				
+			}
+			else
+			{
+				stworkparam.temperature = p_holdingtmp->valueint; //得到保温温度				
+			}
+
+			p_power = cJSON_GetObjectItem(p_data, PROPERTY_POWER); //得到目标功率
+
+			if(!p_power)				//目标功率
+			{
+				printf("target tmp  time is NULL \r\n");
+				
+			}
+			else
+			{
+				stworkparam.power = p_power->valueint; 			//得到保温温度				
+			}
+
+		}
+	}
+
+	aick_mqtt_status_update(p_msg->p_msgid);
+	aick_mqtt_status_update(NULL);
+	
+	return true;
+}
